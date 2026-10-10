@@ -22,3 +22,46 @@ jobs:
 
       - name: Build aur test
         run: dotnet test tests/WebApp.Tests/WebApp.Tests.csproj -c Release
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Code download karo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secrets scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: .NET 8 setup
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Vulnerable packages check
+        run: |
+          for proj in src/WebApp/WebApp.csproj tests/WebApp.Tests/WebApp.Tests.csproj; do
+            dotnet restore $proj
+            dotnet list $proj package --vulnerable --include-transitive 2>&1 | tee vuln.txt
+            if grep -q "has the following vulnerable packages" vuln.txt; then
+              echo "Vulnerable package mila!"
+              exit 1
+            fi
+          done
+
+      - name: CodeQL shuru karo
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+
+      - name: Build for CodeQL
+        run: dotnet build tests/WebApp.Tests/WebApp.Tests.csproj -c Release
+
+      - name: CodeQL analysis
+        uses: github/codeql-action/analyze@v3
