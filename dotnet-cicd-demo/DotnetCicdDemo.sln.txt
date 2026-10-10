@@ -1,3 +1,0 @@
-Run once locally to create the solution file:
-  dotnet new sln -n DotnetCicdDemo
-  dotnet sln add src/WebApp/WebApp.csproj tests/WebApp.Tests/WebApp.Tests.csproj
